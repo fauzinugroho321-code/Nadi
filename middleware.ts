@@ -2,7 +2,8 @@ import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 
 export default auth((req) => {
-  const role = req.auth?.user?.role;
+  // Gunakan 'as any' untuk membypass batasan tipe bawaan NextAuth
+  const role = (req.auth?.user as any)?.role;
   const path = req.nextUrl.pathname;
 
   if (!req.auth) {
