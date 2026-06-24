@@ -3,6 +3,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { hash } from "bcryptjs"; // <--- TAMBAHAN PENTING UNTUK KEAMANAN PASSWORD
 
 // 1. Ambil absensi
 export async function getAllAttendances() {
@@ -87,7 +88,7 @@ export async function getPayrollDrafts(period: string) {
 // 9. Fungsi Submit Payroll ke BOSS
 export async function submitPayrollBatch(period: string, entries: any[]) {
   const session = await auth();
-  if (!session?.user?.id || (session.user as any).role !== "HR") throw new Error("Akses ditolak.");
+  if (!session?.user?.id || !["HR", "BOSS"].includes((session.user as any).role)) throw new Error("Akses ditolak.");
 
   for (const entry of entries) {
     await prisma.payroll.upsert({
@@ -128,7 +129,7 @@ export async function getEmployeeDetail(id: string) {
       division: true,
       salaries: { orderBy: { effectiveDate: "desc" }, take: 1 },
       attendances: { orderBy: { date: "desc" }, take: 5 },
-      tasksAssigned: { orderBy: { createdAt: "desc" }, take: 5 }, // <-- SUDAH DIPERBAIKI
+      tasksAssigned: { orderBy: { createdAt: "desc" }, take: 5 }, 
       leaveRequests: { orderBy: { createdAt: "desc" }, take: 5 },
     }
   });
@@ -151,12 +152,12 @@ export async function inviteEmployee(data: {
   const existingUser = await prisma.user.findUnique({ where: { email: data.email } });
   if (existingUser) throw new Error("Email ini sudah terdaftar di sistem.");
 
-  // Simpan karyawan ke Database
+  // Simpan karyawan ke Database (Dengan Password Hashing yang benar)
   await prisma.user.create({
     data: {
       name: data.name,
       email: data.email,
-      password: data.password, 
+      passwordHash: await hash(data.password, 10), // <--- UBAH DI SINI (Secure Hashing)
       role: "EMPLOYEE",
       workType: data.workType,
       divisionId: data.divisionId,

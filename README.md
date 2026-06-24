@@ -5,6 +5,7 @@ Nadi adalah platform *Software as a Service (SaaS)* skala Enterprise yang diranc
 ## 📸 Screenshot
 
 ![Nadi Dashboard Preview 1](public/nadi-screenshot.png)
+![Nadi Dashboard Preview 2](public/nadi-screenshot2.png)
 
 
 ---
