@@ -1,0 +1,197 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ── Enums ──────────────────────────────────────────────────────
+
+enum Role {
+  BOSS
+  HR
+  EMPLOYEE
+}
+
+enum WorkType {
+  WFH
+  WFO
+  HYBRID
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  INCOMPLETE
+  LEAVE
+}
+
+enum ActivityStatus {
+  ACTIVE
+  IDLE
+  HIDDEN
+}
+
+enum LeaveType {
+  CUTI
+  IZIN
+  SAKIT
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+  LATE
+}
+
+enum PayrollStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  PAID
+}
+
+// ── Models ─────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role
+  workType     WorkType @default(WFO) // default/baseline; per-hari lihat Attendance.actualWorkType
+  isActive     Boolean  @default(true) // soft delete — lihat 6.1
+  divisionId   String?
+  division     Division? @relation(fields: [divisionId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  salaries           Salary[]
+  attendances        Attendance[]
+  activityLogs       ActivityLog[]
+  leaveRequests      LeaveRequest[] @relation("LeaveRequester")
+  leaveApprovals     LeaveRequest[] @relation("LeaveApprover")
+  tasksCreated       Task[]         @relation("TaskCreator")
+  tasksAssigned      Task[]         @relation("TaskAssignee")
+  payrolls           Payroll[]
+  notifications      Notification[]
+}
+
+model Division {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  users User[]
+}
+
+model Salary {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  baseSalary    Decimal  @db.Decimal(12, 2)
+  allowance     Decimal  @db.Decimal(12, 2) @default(0)
+  effectiveDate DateTime // mulai berlaku — histori, bukan ditimpa (6.1)
+  createdAt     DateTime @default(now())
+
+  @@index([userId, effectiveDate])
+}
+
+model Attendance {
+  id              String           @id @default(cuid())
+  userId          String
+  user            User             @relation(fields: [userId], references: [id])
+  date            DateTime         @db.Date
+  clockIn         DateTime?
+  clockOut        DateTime?
+  status          AttendanceStatus
+  actualWorkType  WorkType?        // pola kerja hari itu — lihat 7.3 (Hybrid)
+  notes           String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@unique([userId, date]) // satu baris per hari (6.2)
+}
+
+model ActivityLog {
+  id        String         @id @default(cuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id])
+  date      DateTime       @db.Date
+  startedAt DateTime
+  endedAt   DateTime?
+  status    ActivityStatus
+  createdAt DateTime       @default(now())
+
+  @@index([userId, date])
+}
+
+model LeaveRequest {
+  id          String      @id @default(cuid())
+  requesterId String
+  requester   User        @relation("LeaveRequester", fields: [requesterId], references: [id])
+  approverId  String?
+  approver    User?       @relation("LeaveApprover", fields: [approverId], references: [id])
+  type        LeaveType
+  startDate   DateTime    @db.Date
+  endDate     DateTime    @db.Date
+  reason      String
+  status      LeaveStatus @default(PENDING)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  title       String
+  description String?
+  creatorId   String
+  creator     User       @relation("TaskCreator", fields: [creatorId], references: [id])
+  assigneeId  String
+  assignee    User       @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  status      TaskStatus @default(TODO)
+  dueDate     DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Payroll {
+  id          String        @id @default(cuid())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id])
+  period      String        // format "YYYY-MM"
+  baseSalary  Decimal       @db.Decimal(12, 2)
+  allowance   Decimal       @db.Decimal(12, 2) @default(0)
+  deductions  Decimal       @db.Decimal(12, 2) @default(0)
+  totalAmount Decimal       @db.Decimal(12, 2)
+  status      PayrollStatus @default(DRAFT) // state machine — lihat 6.1
+  submittedAt DateTime?
+  approvedAt  DateTime?
+  paidAt      DateTime?
+  createdAt   DateTime      @default(now())
+
+  @@unique([userId, period])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead])
+}
