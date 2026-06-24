@@ -26,16 +26,19 @@ export default function EmployeeDashboard() {
           getEmployeeDashboardData()
         ]);
 
-        // Proses Absensi
-        if (record) {
+        // Proses Absensi (Bypass Vercel TypeScript Strictness)
+        if (record && record.clockIn) {
+          const clockInTime = new Date(record.clockIn as any).getTime();
+          
           if (!record.clockOut) {
             setClockedIn(true);
-            const diff = Math.floor((new Date().getTime() - new Date(record.clockIn).getTime()) / 1000);
+            const diff = Math.floor((new Date().getTime() - clockInTime) / 1000);
             setElapsed(diff > 0 ? diff : 0);
           } else {
             setClockedIn(false);
             setHasClockedOut(true);
-            const diff = Math.floor((new Date(record.clockOut).getTime() - new Date(record.clockIn).getTime()) / 1000);
+            const clockOutTime = new Date(record.clockOut as any).getTime();
+            const diff = Math.floor((clockOutTime - clockInTime) / 1000);
             setElapsed(diff > 0 ? diff : 0);
           }
         }
@@ -133,7 +136,7 @@ export default function EmployeeDashboard() {
         </div>
       </section>
 
-      {/* Grid Bawah: Tasks & Notifications Terhubung ke DB */}
+      {/* Grid Bawah: Tasks & Notifications */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
         {/* Kolom Tasks */}
@@ -155,7 +158,7 @@ export default function EmployeeDashboard() {
                      <p className="text-sm text-slate-200 group-hover:text-indigo-300 transition-colors cursor-pointer">{task.title}</p>
                      {task.dueDate && (
                        <p className="text-[11px] text-slate-500 flex items-center gap-1 mt-1">
-                         <Clock size={10} /> Due {format(new Date(task.dueDate), "MMM dd")}
+                         <Clock size={10} /> Due {format(new Date(task.dueDate as any), "MMM dd")}
                        </p>
                      )}
                    </div>
@@ -181,7 +184,7 @@ export default function EmployeeDashboard() {
                notifications.map((notif) => (
                  <div key={notif.id} className="p-3 bg-white/5 rounded-xl border border-white/5 hover:bg-white/10 transition-colors cursor-pointer">
                    <p className="text-sm text-slate-200">{notif.message}</p>
-                   <p className="text-[10px] text-slate-500 mt-1.5">{format(new Date(notif.createdAt), "dd MMM yyyy, HH:mm")}</p>
+                   <p className="text-[10px] text-slate-500 mt-1.5">{format(new Date(notif.createdAt as any), "dd MMM yyyy, HH:mm")}</p>
                  </div>
                ))
              ) : (
