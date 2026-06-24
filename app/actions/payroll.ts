@@ -20,7 +20,7 @@ export async function createDemoPayroll() {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Akses ditolak.");
 
-  const period = "2026-06"; // Sesuai desain dummy
+  const period = new Date().getFullYear() + "-" + String(new Date().getMonth() + 1).padStart(2, '0'); // Sesuai desain dummy
 
   // Cek agar tidak terbuat ganda
   const existing = await prisma.payroll.findFirst({

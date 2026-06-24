@@ -21,7 +21,6 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
   const pathname = usePathname();
   const [hov, setHov] = useState<string | null>(null);
   const [profile, setProfile] = useState<any>(null);
-
   const [notifs, setNotifs] = useState<any[]>([]);
   const [showNotif, setShowNotif] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -38,10 +37,10 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
     <div className="flex h-screen overflow-hidden font-sans" style={{ background: "#0A0E17" }}>
       <aside className="fixed left-0 top-0 h-full z-50 flex flex-col items-center py-5 w-[60px] border-r border-white/5 bg-[#0A0E17]">
         <div className="mb-5 flex flex-col items-center gap-[7px]">
-  <div className="w-10 h-10 rounded-[10px] overflow-hidden shadow-[0_0_22px_rgba(99,102,241,0.5)] border border-white/10 shrink-0">
-    <img src="/nadi.jpg" alt="Logo" className="w-full h-full object-cover" />
-  </div>
-</div>
+          <div className="w-10 h-10 rounded-[10px] overflow-hidden shadow-[0_0_22px_rgba(99,102,241,0.5)] border border-white/10 shrink-0">
+            <img src="/nadi.jpg" alt="Logo" className="w-full h-full object-cover" />
+          </div>
+        </div>
         <nav className="flex flex-col gap-[2px] flex-1">
           {NAV_ITEMS.map((item) => {
             const isActive = pathname.startsWith(item.id);
@@ -60,10 +59,9 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
         </nav>
         <LogoutButton />
       </aside>
-
+      
       <div className="flex flex-col flex-1 ml-[60px] min-w-0 relative z-10">
         <header className="flex items-center gap-4 px-6 h-[52px] flex-shrink-0 border-b border-white/5 bg-[#0A0E17]/80 backdrop-blur-md">
-          
           <div className="relative w-64 z-50">
             <div className={`flex items-center gap-2.5 px-3 py-[7px] rounded-xl transition-colors ${showSearch ? "bg-[#151929] border border-indigo-500/50" : "bg-[#0F1220] border border-white/5"}`}>
               <Search size={13} className="text-slate-600" />
@@ -81,7 +79,6 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
               )}
             </AnimatePresence>
           </div>
-
           <div className="flex-1" />
           
           <div className="relative z-50">
@@ -120,7 +117,12 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
             <div className="w-8 h-8 rounded-full text-white text-[10px] font-black flex items-center justify-center bg-[#151929] border border-white/10 shadow-lg">{initials}</div>
           </div>
         </header>
-        {children}
+
+        {/* 👇 INI YANG DITAMBAHKAN: Wrapper <main> yang bisa di-scroll */}
+        <main className="flex-1 overflow-y-auto p-6 md:p-8" style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(99,102,241,0.2) transparent" }}>
+          {children}
+        </main>
+
       </div>
     </div>
   );

@@ -1,28 +1,27 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Users, Edit2, RefreshCw, Building2, X } from "lucide-react";
-import { getAllDivisions, createDivision } from "@/app/actions/hr";
+import { Plus, Users, RefreshCw, Building2, X, MoreVertical, Edit2, Trash2 } from "lucide-react";
+import { getAllDivisions, createDivision, updateDivision, deleteDivision } from "@/app/actions/hr";
 import { motion, AnimatePresence } from "motion/react";
+import Link from "next/link";
 
 export default function HRDivisions() {
   const [divisions, setDivisions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // State untuk Modal Tambah Divisi
   const [showModal, setShowModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [newDivName, setNewDivName] = useState("");
+  const [editDivId, setEditDivId] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   const fetchDivisions = async () => {
     try {
       const data = await getAllDivisions();
       setDivisions(data);
-    } catch (error) {
-      console.error("Gagal memuat divisi:", error);
-    } finally {
-      setLoading(false);
-    }
+    } catch (error) { console.error(error); } finally { setLoading(false); }
   };
 
   useEffect(() => { fetchDivisions(); }, []);
@@ -33,51 +32,75 @@ export default function HRDivisions() {
     setSubmitting(true);
     try {
       await createDivision(newDivName);
-      setShowModal(false);
-      setNewDivName("");
-      await fetchDivisions(); // Refresh data
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setSubmitting(false);
-    }
+      setShowModal(false); setNewDivName(""); await fetchDivisions();
+    } catch (error) { console.error(error); } finally { setSubmitting(false); }
+  };
+
+  const handleEditDivision = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newDivName.trim()) return;
+    setSubmitting(true);
+    try {
+      await updateDivision(editDivId, newDivName);
+      setShowEditModal(false); setNewDivName(""); setEditDivId(""); await fetchDivisions();
+    } catch (error) { console.error(error); } finally { setSubmitting(false); }
+  };
+
+  const handleDelete = async (id: string, headcount: number) => {
+    if (headcount > 0) return alert("Kosongkan anggota divisi ini terlebih dahulu sebelum menghapus!");
+    if (!confirm("Yakin ingin menghapus divisi ini?")) return;
+    await deleteDivision(id);
+    await fetchDivisions();
   };
 
   const formatCompactRp = (n: number) => {
-    if (n === 0) return "Belum diatur";
+    if (!n || n === 0) return "Belum diatur";
     if (n >= 1000000000) return `Rp ${(n / 1000000000).toFixed(1)}B`;
     if (n >= 1000000) return `Rp ${(n / 1000000).toFixed(0)}M`;
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
   };
 
-  if (loading) return (
-    <div className="flex-1 flex flex-col items-center justify-center gap-3 text-indigo-400 h-full min-h-[50vh]">
-      <RefreshCw className="animate-spin" size={32} />
-    </div>
-  );
+  if (loading) return <div className="flex-1 flex justify-center items-center text-indigo-400 h-full"><RefreshCw className="animate-spin" size={32} /></div>;
 
   return (
-    <main className="flex-1 overflow-y-auto px-6 py-5 pb-20 relative">
+    <main className="flex-1 overflow-y-auto px-6 py-5 pb-20 relative" onClick={() => setOpenMenuId(null)}>
       <div className="flex justify-between items-end mb-6">
         <div>
           <h1 className="text-xl font-black text-slate-100">Divisions & Departments</h1>
           <p className="text-xs text-slate-400 mt-1">Manage company structure and teams</p>
         </div>
-        <button onClick={() => setShowModal(true)} className="flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-lg shadow-indigo-500/20 hover:scale-[0.98] transition-transform">
+        <button onClick={() => setShowModal(true)} className="flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-lg hover:scale-[0.98] transition-transform">
           <Plus size={14} /> Add Division
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {divisions.map((div) => (
-          <div key={div.id} className="p-5 rounded-2xl border border-indigo-500/10 bg-[#0F1220] shadow-xl relative group hover:border-indigo-500/30 transition-colors">
-            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mb-4">
-               <Building2 size={18} className="text-indigo-400" />
+          <div key={div.id} className="p-5 rounded-2xl border border-indigo-500/10 bg-[#0F1220] shadow-xl relative group hover:border-indigo-500/40 transition-colors flex flex-col">
+            
+            {/* Context Menu Button */}
+            <div className="absolute top-4 right-4 z-10">
+               <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === div.id ? null : div.id); }} className="p-1.5 text-slate-500 hover:text-white rounded-md hover:bg-white/10 transition-colors">
+                 <MoreVertical size={16} />
+               </button>
+               {openMenuId === div.id && (
+                 <div className="absolute right-0 mt-1 w-32 bg-[#151929] border border-white/10 rounded-xl shadow-2xl overflow-hidden py-1 z-20">
+                    <button onClick={(e) => { e.stopPropagation(); setEditDivId(div.id); setNewDivName(div.name); setShowEditModal(true); setOpenMenuId(null); }} className="w-full text-left px-4 py-2 text-xs text-slate-300 hover:bg-white/5 flex items-center gap-2"><Edit2 size={12}/> Rename</button>
+                    <button onClick={(e) => { e.stopPropagation(); handleDelete(div.id, div.headcount); setOpenMenuId(null); }} className="w-full text-left px-4 py-2 text-xs text-rose-400 hover:bg-rose-500/10 flex items-center gap-2"><Trash2 size={12}/> Delete</button>
+                 </div>
+               )}
             </div>
-            <h3 className="text-lg font-black text-slate-100 mb-4">{div.name}</h3>
-            <div className="flex items-center gap-4 text-sm text-slate-400 mb-1">
-              <span className="flex items-center gap-1.5 font-medium"><Users size={14} className="text-indigo-400"/> {div.headcount} Employees</span>
-            </div>
+
+            <Link href={`/hr/employees`} className="flex-1 block cursor-pointer">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mb-4">
+                <Building2 size={18} className="text-indigo-400" />
+              </div>
+              <h3 className="text-lg font-black text-slate-100 mb-4">{div.name}</h3>
+              <div className="flex items-center gap-4 text-sm text-slate-400 mb-1">
+                <span className="flex items-center gap-1.5 font-medium"><Users size={14} className="text-indigo-400"/> {div.headcount} Employees</span>
+              </div>
+            </Link>
+            
             <div className="mt-4 pt-4 border-t border-indigo-500/10 flex justify-between items-center">
               <span className="text-[10px] uppercase font-bold text-slate-500">Est. Payroll</span>
               <span className={`text-xs font-bold ${div.budget > 0 ? "text-emerald-400" : "text-slate-500"}`}>{formatCompactRp(div.budget)}</span>
@@ -86,13 +109,13 @@ export default function HRDivisions() {
         ))}
       </div>
 
-      {/* Modal Add Division */}
+      {/* Modal Add/Edit */}
       <AnimatePresence>
-        {showModal && (
+        {(showModal || showEditModal) && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.form initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} onSubmit={handleAddDivision} className="bg-[#151929] border border-indigo-500/20 rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
-              <button type="button" onClick={() => setShowModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white"><X size={18}/></button>
-              <h2 className="text-lg font-bold text-white mb-4">Create New Division</h2>
+            <motion.form initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} onSubmit={showEditModal ? handleEditDivision : handleAddDivision} className="bg-[#151929] border border-indigo-500/20 rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
+              <button type="button" onClick={() => {setShowModal(false); setShowEditModal(false);}} className="absolute top-4 right-4 text-slate-400 hover:text-white"><X size={18}/></button>
+              <h2 className="text-lg font-bold text-white mb-4">{showEditModal ? "Rename Division" : "Create New Division"}</h2>
               <div className="mb-6">
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Division Name</label>
                 <input type="text" autoFocus required value={newDivName} onChange={e => setNewDivName(e.target.value)} placeholder="e.g. Marketing, IT Support" className="w-full bg-[#0F1220] border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-indigo-500" />
