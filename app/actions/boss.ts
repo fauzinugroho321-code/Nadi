@@ -75,7 +75,7 @@ export async function getCompanyReportsData() {
       users: {
         include: {
           attendances: true,
-          tasksAssignee: true
+          tasksAssigned: true // <-- SUDAH DIPERBAIKI
         }
       }
     }
@@ -89,8 +89,8 @@ export async function getCompanyReportsData() {
     let presentAttendances = 0;
 
     div.users.forEach((user: any) => {
-      totalTasks += user.tasksAssignee.length;
-      completedTasks += user.tasksAssignee.filter((t: any) => t.status === "DONE").length;
+      totalTasks += user.tasksAssigned.length; // <-- SUDAH DIPERBAIKI
+      completedTasks += user.tasksAssigned.filter((t: any) => t.status === "DONE").length; // <-- SUDAH DIPERBAIKI
       totalAttendances += user.attendances.length;
       presentAttendances += user.attendances.filter((a: any) => a.status === "PRESENT" || a.status === "INCOMPLETE").length;
     });

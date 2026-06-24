@@ -128,11 +128,13 @@ export async function getEmployeeDetail(id: string) {
       division: true,
       salaries: { orderBy: { effectiveDate: "desc" }, take: 1 },
       attendances: { orderBy: { date: "desc" }, take: 5 },
-      tasksAssignee: { orderBy: { createdAt: "desc" }, take: 5 },
+      tasksAssigned: { orderBy: { createdAt: "desc" }, take: 5 }, // <-- SUDAH DIPERBAIKI
       leaveRequests: { orderBy: { createdAt: "desc" }, take: 5 },
     }
   });
 }
+
+// 11. BARU: Fungsi Invite / Tambah Karyawan Baru
 export async function inviteEmployee(data: {
   name: string;
   email: string;
@@ -154,7 +156,7 @@ export async function inviteEmployee(data: {
     data: {
       name: data.name,
       email: data.email,
-      password: data.password, // Catatan: Di aplikasi Production, password harus di-hash (misal pakai bcrypt). Untuk MVP ini, kita simpan langsung agar mudah dites.
+      password: data.password, 
       role: "EMPLOYEE",
       workType: data.workType,
       divisionId: data.divisionId,
@@ -166,6 +168,7 @@ export async function inviteEmployee(data: {
   revalidatePath("/hr/employees");
   revalidatePath("/boss/employees");
 }
+
 // 12. BARU: Fungsi Tambah Divisi
 export async function createDivision(name: string) {
   const session = await auth();
